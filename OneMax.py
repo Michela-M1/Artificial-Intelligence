@@ -64,5 +64,5 @@ for generation in range(generations):
 plt.plot(range(1, generations + 1), avg_fitness_values, marker='o')
 plt.xlabel('Generation')
 plt.ylabel('Average Fitness')
-plt.title('Average Fitness Over Generations')
+plt.title('1.1 Average Fitness Over Generations')
 plt.show()
