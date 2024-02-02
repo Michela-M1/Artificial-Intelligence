@@ -1,14 +1,12 @@
 import random
 from matplotlib import pyplot as plt
-from OneMax import create_individual, crossover, mutate
+from OneMax import create_individual, crossover, mutate, geneticAlgo
 
 # Set a seed for reproducibility
 random.seed(42)
 
 length = 30
-pop_size = 10
 generations = 100
-mutation_rate = 0.05
 target_string = ''.join(random.choice(['0', '1']) for _ in range(length))
 print(target_string)
 
@@ -18,32 +16,9 @@ def evaluate(input_string):
     return output
 
 
-population = [create_individual() for _ in range(pop_size)]
-avg_fitness_values = []
+avg_fitness_values = geneticAlgo(length, 50, generations, 0.05)
 
-for generation in range(generations):
-    # Evaluate fitness
-    fitness_values = [evaluate(individual) for individual in population]
-
-    # Get average fitness for the generation
-    avg_fitness = sum(fitness for fitness in fitness_values) / pop_size
-    avg_fitness_values.append(avg_fitness)
-    print(f"Generation {generation + 1}: Average Fitness = {avg_fitness}")
-
-    # Select parents
-    selected_parents = random.choices(population, weights=fitness_values, k=pop_size)
-
-    # Create offspring
-    offspring = []
-    for i in range(0, pop_size, 2):
-        parent1, parent2 = selected_parents[i], selected_parents[i+1]
-        child1, child2 = crossover(parent1, parent2)
-        offspring.extend(mutate(child) for child in (child1, child2))
-
-    # Replace old population with new one
-    population = [child for child in offspring]
-
-# Plotting the average fitness over generations
+# Plot the average fitness over generations
 plt.plot(range(1, generations + 1), avg_fitness_values, marker='o')
 plt.xlabel('Generation')
 plt.ylabel('Average Fitness')
