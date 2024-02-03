@@ -1,6 +1,6 @@
 import random
 from matplotlib import pyplot as plt
-from OneMax import create_individual, crossover, mutate, geneticAlgo
+from main import create_individual, crossover, mutate, geneticAlgo
 
 # Set a seed for reproducibility
 random.seed(42)

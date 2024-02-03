@@ -1,6 +1,6 @@
 import random
 from matplotlib import pyplot as plt
-from OneMax import create_individual, crossover, mutate, geneticAlgo
+from main import create_individual, crossover, mutate, geneticAlgo
 
 generations = 30
 
