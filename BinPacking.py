@@ -1,4 +1,6 @@
 import random
+# Set a seed for reproducibility
+random.seed(42)
 
 def read_data_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -50,25 +52,35 @@ def evaluate(individual):
     return bins_used
 
 
-def roulette_wheel_selection(population, fitness_values):
-    selected_population = []
-    total_fitness = sum(fitness_values)
+def parents_selection(population, fitness_values, average_fitness):
+    selected_parents_for_crossover = []
 
-    for _ in range(len(population)):
-        # Select an individual based on roulette wheel selection
-        rand_val = random.uniform(0, total_fitness)
-        cumulative_fitness = 0
+    for i, fitness in enumerate(fitness_values):
+        # Only select parents for crossover if their fitness is below the average
+        if fitness > average_fitness:
+            selected_parents_for_crossover.append(population.pop(i))
+            fitness_values.pop(i)
 
-        for i, fitness in enumerate(fitness_values):
-            cumulative_fitness += fitness
-            if cumulative_fitness >= rand_val:
-                selected_population.append(population[i])
-                break
+    # If the selected population is odd, randomly select one additional parent
+    if len(selected_parents_for_crossover) % 2 != 0:
+        random_index = random.randint(0, len(selected_parents_for_crossover) - 1)
+        population.append(selected_parents_for_crossover.pop(random_index))
 
-    return selected_population
+    # Perform crossover on selected parents
+    offspring = []
+    for i in range(0, len(selected_parents_for_crossover), 2):
+        parent1 = selected_parents_for_crossover[i]
+        parent2 = selected_parents_for_crossover[i + 1]
+        child1, child2 = crossover_function(parent1, parent2)
+        offspring.extend(mutation(child) for child in (child1, child2))
+
+    # Combine offspring with the rest of the population
+    new_population = population + offspring
+
+    return new_population
 
 
-def crossover(parent1, parent2):
+def crossover_function(parent1, parent2):
     # Choose a random crossover point
     crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1)
 
@@ -95,8 +107,8 @@ file_path = 'BPP1.txt'
 m, C, item_weights, item_counts = read_data_from_file(file_path)
 
 generations = 100
-pop_size = 100
-mutation_rate = 0.9
+pop_size = 20
+mutation_rate = 0.1
 population = initialize_population(pop_size, item_weights, item_counts)
 avg_fitness_values = []
 
@@ -109,14 +121,6 @@ for generation in range(generations):
     avg_fitness_values.append(avg_fitness)
     print(f"Generation {generation + 1}: Average Fitness = {avg_fitness}")
 
-    # Select parents
-    selected_parents = random.choices(population, weights=fitness_values, k=pop_size)
+    # Do crossover AND MUTATION
+    population = parents_selection(population, fitness_values, avg_fitness)
 
-    # Create offspring
-    offspring = []
-    for i in range (0, pop_size, 2):
-        parent1, parent2 = selected_parents[i], selected_parents[i + 1]
-        child1, child2 = crossover(parent1, parent2)
-        offspring.extend(mutation(child) for child in (child1, child2))
-
-    population = offspring
