@@ -1,6 +1,12 @@
 import random
+from main import crossover
+
 # Set a seed for reproducibility
 random.seed(42)
+
+generations = 50
+pop_size = 30
+mutation_rate = 0.1
 
 def read_data_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -34,7 +40,6 @@ def initialize_population(population_size, item_weights, item_counts):
 
 
 def evaluate(individual):
-    total_weight = 0
     bins_used = 0
     current_bin_capacity = C
 
@@ -45,50 +50,9 @@ def evaluate(individual):
             bins_used += 1
             current_bin_capacity = C - item_weight
 
-    # Consider the last bin if not completely filled
     if current_bin_capacity < C:
         bins_used += 1
-
     return bins_used
-
-
-def parents_selection(population, fitness_values, average_fitness):
-    selected_parents_for_crossover = []
-
-    for i, fitness in enumerate(fitness_values):
-        # Only select parents for crossover if their fitness is below the average
-        if fitness > average_fitness:
-            selected_parents_for_crossover.append(population.pop(i))
-            fitness_values.pop(i)
-
-    # If the selected population is odd, randomly select one additional parent
-    if len(selected_parents_for_crossover) % 2 != 0:
-        random_index = random.randint(0, len(selected_parents_for_crossover) - 1)
-        population.append(selected_parents_for_crossover.pop(random_index))
-
-    # Perform crossover on selected parents
-    offspring = []
-    for i in range(0, len(selected_parents_for_crossover), 2):
-        parent1 = selected_parents_for_crossover[i]
-        parent2 = selected_parents_for_crossover[i + 1]
-        child1, child2 = crossover_function(parent1, parent2)
-        offspring.extend(mutation(child) for child in (child1, child2))
-
-    # Combine offspring with the rest of the population
-    new_population = population + offspring
-
-    return new_population
-
-
-def crossover_function(parent1, parent2):
-    # Choose a random crossover point
-    crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1)
-
-    # Perform one-point crossover
-    child1 = parent1[:crossover_point] + parent2[crossover_point:]
-    child2 = parent2[:crossover_point] + parent1[crossover_point:]
-
-    return child1, child2
 
 
 def mutation(bins):
@@ -106,21 +70,53 @@ def mutation(bins):
 file_path = 'BPP1.txt'
 m, C, item_weights, item_counts = read_data_from_file(file_path)
 
-generations = 100
-pop_size = 20
-mutation_rate = 0.1
 population = initialize_population(pop_size, item_weights, item_counts)
 avg_fitness_values = []
+lowest_fitness = 100
+best_individual = None
 
 for generation in range(generations):
     # Evaluate fitness
-    fitness_values = [evaluate(individual) for individual in population]
+    fitness_values = []
+    for individual in population:
+        fitness = evaluate(individual)
+        fitness_values.append(fitness)
+
+        if (fitness < lowest_fitness):
+            lowest_fitness = fitness
+            best_individual = individual
+            print("Fitness:", lowest_fitness, "Best individual:", best_individual)
+    #fitness_values = [evaluate(individual) for individual in population]
 
     # Get average fitness for the generation
     avg_fitness = sum(fitness for fitness in fitness_values) / pop_size
     avg_fitness_values.append(avg_fitness)
     print(f"Generation {generation + 1}: Average Fitness = {avg_fitness}")
 
-    # Do crossover AND MUTATION
-    population = parents_selection(population, fitness_values, avg_fitness)
+    # Select parents
+    selected_parents = []
+    for i, fitness in enumerate(fitness_values):
+        # Only select parents for crossover if their fitness is above the average
+        if fitness >= avg_fitness:
+            selected_parents.append(population.pop(i))
+            fitness_values.pop(i)
+    # If the selected population is odd, randomly remove one
+    if len(selected_parents) % 2 != 0:
+        random_index = random.randint(0, len(selected_parents) - 1)
+        population.append(selected_parents.pop(random_index))
 
+    # Create offspring
+    offspring = []
+    for i in range(0, len(selected_parents), 2):
+        parent1 = selected_parents[i]
+        parent2 = selected_parents[i + 1]
+        child1, child2 = crossover(parent1, parent2)
+        offspring.extend(mutation(child) for child in (child1, child2))
+
+    # Combine offspring with the rest of the population
+    new_population = population + offspring
+
+    # Update population with offspring
+    population = new_population
+
+print("Lowest fitness:", lowest_fitness, "Best individual:", best_individual)

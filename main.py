@@ -16,9 +16,13 @@ def evaluate(input_string):
 
 
 def crossover(parent1, parent2):
+    # Choose a random crossover point
     x = random.randint(0, len(parent1) - 1)     # if x is 0 or 29, then there is no crossover...
+
+    # Perform one-point crossover
     child1 = parent1[:x] + parent2[x:]
     child2 = parent2[:x] + parent1[x:]
+
     return child1, child2
 
 
