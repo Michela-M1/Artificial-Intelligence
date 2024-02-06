@@ -16,7 +16,6 @@ def evaluate(input_string):
     if num_ones > 0:
         return num_ones
     else:
-        print("oops")
         return 2 * len(input_string)
 
 

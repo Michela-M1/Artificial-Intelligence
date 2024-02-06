@@ -1,88 +1,122 @@
 import random
-from main import crossover
 
-generations = 1
+def read_data_from_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
 
-with open('BPP1.txt', 'r') as file:
-    lines = file.readlines()
+    # Extract data from lines
+    m = int(lines[0])   # Number m of different item weights
+    C = int(lines[1])   # Capacity C of the bins
 
-m = int(lines[0].strip())  # Number m of different item weights
-C = int(lines[1].strip())  # Capacity C of the bins
+    item_weights = []
+    item_counts = []
+    for line in lines[2:]:
+        weight, count = map(int, line.strip().split())
+        item_weights.append(weight)
+        item_counts.append(count)
 
-item_weights = []
-item_counts = []
-
-for line in lines[2:]:
-    weight, count = map(int, line.strip().split())
-    item_weights.append(weight)
-    item_counts.append(count)
+    return m, C, item_weights, item_counts
 
 
-def initialize_population():
-
+def initialize_population(population_size, item_weights, item_counts):
     population = []
-    for weight, count in zip(item_weights, item_counts):
-        items = [weight] * count
-        population.extend(items)
-
-    # Randomly shuffle the items in the solution
-    random.shuffle(population)
-
+    for _ in range(population_size):
+        # Generate a random solution based on item weights and counts
+        solution = []
+        for weight, count in zip(item_weights, item_counts):
+            items = [weight] * count
+            solution.extend(items)
+        random.shuffle(solution)
+        population.append(solution)
     return population
 
 
-def evaluate(bins):
-    return(len(bins))
+def evaluate(individual):
+    total_weight = 0
+    bins_used = 0
+    current_bin_capacity = C
 
-
-def binning(population):
-    solution = []
-    bin_item = []
-    remaining_capacity = C
-
-    for item in population:
-        if remaining_capacity - item >= 0:
-            bin_item.append(item)
-            remaining_capacity -= item
+    for item_weight in individual:
+        if item_weight <= current_bin_capacity:
+            current_bin_capacity -= item_weight
         else:
-            solution.append(bin_item)
-            bin_item = []
-            remaining_capacity = C
+            bins_used += 1
+            current_bin_capacity = C - item_weight
 
-    # Add the last bin if it's not empty
-    if bin_item:
-        solution.append(bin_item)
+    # Consider the last bin if not completely filled
+    if current_bin_capacity < C:
+        bins_used += 1
 
-    return solution
-
-
-#def crossover(parent1, parent2):
+    return bins_used
 
 
-population = initialize_population()
-bins = binning(population)
+def roulette_wheel_selection(population, fitness_values):
+    selected_population = []
+    total_fitness = sum(fitness_values)
 
-fitness_values = []
+    for _ in range(len(population)):
+        # Select an individual based on roulette wheel selection
+        rand_val = random.uniform(0, total_fitness)
+        cumulative_fitness = 0
+
+        for i, fitness in enumerate(fitness_values):
+            cumulative_fitness += fitness
+            if cumulative_fitness >= rand_val:
+                selected_population.append(population[i])
+                break
+
+    return selected_population
+
+
+def crossover(parent1, parent2):
+    # Choose a random crossover point
+    crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1)
+
+    # Perform one-point crossover
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+
+    return child1, child2
+
+
+def mutation(bins):
+
+    mutated_bins = bins.copy()
+    for i in range(len(mutated_bins)):
+        if random.random() < mutation_rate:
+            new_position = random.randint(0, len(mutated_bins) - 1)
+            mutated_bins[i] = bins[new_position]
+            mutated_bins[i] = bins[i]
+
+    return mutated_bins
+
+
+file_path = 'BPP1.txt'
+m, C, item_weights, item_counts = read_data_from_file(file_path)
+
+generations = 100
+pop_size = 100
+mutation_rate = 0.9
+population = initialize_population(pop_size, item_weights, item_counts)
+avg_fitness_values = []
 
 for generation in range(generations):
-    # Get fitness for the generation
-    fitness = evaluate(bins)
-    fitness_values.append(fitness)
+    # Evaluate fitness
+    fitness_values = [evaluate(individual) for individual in population]
 
-    print(f"Generation {generation + 1}: Fitness = {fitness}")
+    # Get average fitness for the generation
+    avg_fitness = sum(fitness for fitness in fitness_values) / pop_size
+    avg_fitness_values.append(avg_fitness)
+    print(f"Generation {generation + 1}: Average Fitness = {avg_fitness}")
 
-    print(bins)
     # Select parents
-    parent1 = random.randint(1, fitness)
-    parent2 = random.randint(1, fitness)
-    print(parent1)
-    print(parent2)
+    selected_parents = random.choices(population, weights=fitness_values, k=pop_size)
 
     # Create offspring
-    child1, child2 = crossover(bins[parent1-1], bins[parent2-1])
-    print(child1)
-    print(child2)
-    bins[parent1-1] = child1
-    bins[parent2-1] = child2
+    offspring = []
+    for i in range (0, pop_size, 2):
+        parent1, parent2 = selected_parents[i], selected_parents[i + 1]
+        child1, child2 = crossover(parent1, parent2)
+        offspring.extend(mutation(child) for child in (child1, child2))
 
-    print(bins)
+    population = offspring
