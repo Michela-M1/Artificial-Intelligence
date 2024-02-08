@@ -86,7 +86,6 @@ for generation in range(generations):
             lowest_fitness = fitness
             best_individual = individual
             print("Fitness:", lowest_fitness, "Best individual:", best_individual)
-    #fitness_values = [evaluate(individual) for individual in population]
 
     # Get average fitness for the generation
     avg_fitness = sum(fitness for fitness in fitness_values) / pop_size
@@ -94,16 +93,7 @@ for generation in range(generations):
     print(f"Generation {generation + 1}: Average Fitness = {avg_fitness}")
 
     # Select parents
-    selected_parents = []
-    for i, fitness in enumerate(fitness_values):
-        # Only select parents for crossover if their fitness is above the average
-        if fitness >= avg_fitness:
-            selected_parents.append(population.pop(i))
-            fitness_values.pop(i)
-    # If the selected population is odd, randomly remove one
-    if len(selected_parents) % 2 != 0:
-        random_index = random.randint(0, len(selected_parents) - 1)
-        population.append(selected_parents.pop(random_index))
+    selected_parents = random.choices(population, weights=fitness_values, k=pop_size)
 
     # Create offspring
     offspring = []
@@ -113,10 +103,7 @@ for generation in range(generations):
         child1, child2 = crossover(parent1, parent2)
         offspring.extend(mutation(child) for child in (child1, child2))
 
-    # Combine offspring with the rest of the population
-    new_population = population + offspring
-
     # Update population with offspring
-    population = new_population
+    population = offspring
 
 print("Lowest fitness:", lowest_fitness, "Best individual:", best_individual)
